@@ -1,0 +1,110 @@
+#!/bin/bash
+source ${XDG_CONFIG_HOME:-~/.config}/droplr-bash/config
+
+# Gets the extension of the file to upload.
+get_file_extension() {
+  # Get the file's details
+  local filename
+  filename="$(basename -- "$1")"
+
+  local extension
+  extension="${filename##*.}"
+  
+  echo "$extension"
+}
+
+# Move file to tmp so we can modify it and not touch the original.
+move_to_tmp() {
+  local new_filepath
+  new_filepath="/tmp/$(date +%Y_%m_%d_%H%M%S).$2"
+
+  cp "$1" "$new_filepath"
+
+  echo "$new_filepath"
+}
+
+# Attempts to do basic conversion of video file to mp4
+convert_video_file() {
+  local new_filepath
+  new_filepath="$1.mp4"
+
+  ffmpeg -loglevel panic -i "$1" "$new_filepath"
+  
+  echo "$new_filepath"
+}
+
+# Uploads the file to S3
+upload_file() {
+  # Get the base filename
+  local filename
+  filename="$(basename -- "$1")"
+
+  # Get the mime for the file
+  local mime
+  mime=$(file -b --mime-type "$1")
+
+  # Setup the auth
+  local auth
+  auth=$(echo -n $username:$password | base64)
+
+  # Post the file
+  local post
+  post=$(curl --silent \
+    -X POST \
+    -H "Authorization: Basic $auth" \
+    -H "Content-Type: $mime" \
+    --data-binary "@$1" \
+    https://api.droplr.com/files?filename="$filename")
+
+  # Get the location of the file upload\
+  echo "$post" | jq '.shortlink' | tr -d '"'
+}
+
+
+# Uploads the file.
+# It will perform checks on the filename and do different actions
+# depending upon settings and the file type.
+handle_file() {
+  # Get the extension
+  local extension
+  extension="$(get_file_extension "$1")"
+
+  # Move to tmp and rename
+  local new_filepath
+  new_filepath="$(move_to_tmp "${1}" "${extension}")"
+
+  # Check to convert video
+  if [ "$convert_video" == "1" ] ; then
+    # Check if this is a video
+    local test_file
+    test_file="$(file -i "$new_filepath" | grep video)"
+
+    if [ "$test_file" ] ; then
+      if [[ ! $extension =~ ^(MP4|mp4)$ ]] ; then
+        new_filepath="$(convert_video_file "$new_filepath")"
+      fi
+    fi
+  fi
+
+  # Upload the file and get the file URL
+  local location
+  location="$(upload_file "$new_filepath")"
+
+  # Copy to clipboard for use
+  echo "$location" | xclip -selection clipboard
+  
+  # Check if we should notify
+  if [ "$notify" == "1" ] ; then
+    notify-send "Droplr Uploaded!" "Public link has been copied to your clipboard."
+  fi;
+}
+
+# Watches the folder specified for writes or moves
+watch_directory() {
+  inotifywait --quiet --event close_write,moved_to -m "$watch_dir" |
+  while read -r directory events filename; do
+    handle_file "$watch_dir/$filename"
+  done
+}
+
+watch_directory
