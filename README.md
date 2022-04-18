@@ -2,11 +2,23 @@
 
 Basic Droplr implementation for Linux written in Bash.
 
-This script will watch a set directory for new files (created or moved into the directory). It will then upload to your Droplr account and copy the share URL to your clipboard.
+Currently, Droplr has no native Linux client besides browser extensions (Chrome only).
 
-Currently, Droplr has no native Linux client or Firefox extension. The advantage of this script is its completely agnostic; you can use any screenshot software, recording software, or simply drop files into the watched directory and it will process them for you.
+The advantage of this script is its completely agnostic. You can use any screenshot software, recording software, or simply drop files and it will process them for you.
+
+There are two modes to this script described below.
+
+## Watching
+
+Will watch a set directory for new files (created or moved into the directory).
+
+It will then upload to your Droplr account and copy the share URL to your clipboard.
 
 ![Sample](sample.gif?raw=true "Sample")
+
+## Latest
+
+This will grab the latest file in the set directory and upload to your Droplr account and copy the share URL to your clipboard.
 
 ## Installation
 
@@ -14,20 +26,26 @@ First, you'll need the following libraries:
 
 + `inotify-tools` (required) For watching the directory
 + `curl` (required) For sending cURL commands
-+ `xclip` (required) to copy the public upload link to your clipboard.
++ `jq` (required) For paring the response
 + `ffmpeg` (optional) If you plan on having videos converted for you
 + `notify-send` (optional) To send notification to desktop
 
-Next, create a file `$XDG_CONFIG_HOME/droplr-bash/config` (ex: `~/.config/droplr-bash/config`) with the following contents:
-
-```conf
-watch_dir=/home/(yourname)/(somedir)/droplr # Directory to watch
-username="your-email"
-password="yout-password"
-convert_video=1 # 1 = Convert videos to MP4, 0 = Leave them as-is
-notify=1 # 1 = Use notify-send to notify when available in the clipboard, 0 = Ignore clipboard action
-```
+Next, create a file `$XDG_CONFIG_HOME/droplr-bash/config` (ex: `~/.config/droplr-bash/config`) with the contents corrected from `./config.sample` in this repo.
 
 ## Usage
 
-`chmod +X droplr`. Then simply add a start script pointing to `droplr` script or run directly to start watching.
+`chmod +X droplr`
+
+### Watching
+
+Run `droplr watch`.
+
+### Latest
+
+Run `droplr`.
+
+## Recommendations
+
+Use Droplr a lot? It would be worth setting up a SystemD script or similar start-up script to run the `droplr watch` in the background.
+
+If you rarely use it, it is best to invoke the script via a keyboard shortcut tied to `droplr` to upload the latest file.

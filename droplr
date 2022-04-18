@@ -1,5 +1,10 @@
 #!/bin/bash
-source ${XDG_CONFIG_HOME:-~/.config}/droplr-bash/config
+config_path=${XDG_CONFIG_HOME:-~/.config}/droplr-bash/config
+if [[ ! -f "$config_path" ]]; then
+  echo "Missing config path in $config_path"
+  exit 1
+fi;
+source "$config_path"
 
 # Gets the extension of the file to upload.
 get_file_extension() {
@@ -91,7 +96,7 @@ handle_file() {
   location="$(upload_file "$new_filepath")"
 
   # Copy to clipboard for use
-  echo "$location" | xclip -selection clipboard
+  echo "$location" | "$clip_cmd"
   
   # Check if we should notify
   if [ "$notify" == "1" ] ; then
@@ -100,11 +105,21 @@ handle_file() {
 }
 
 # Watches the folder specified for writes or moves
-watch_directory() {
+cmd_watch_directory() {
   inotifywait --quiet --event close_write,moved_to -m "$watch_dir" |
   while read -r directory events filename; do
     handle_file "$watch_dir/$filename"
   done
 }
 
-watch_directory
+# Upload the latest file found
+cmd_upload_latest() {
+  latest_file="$(ls "$watch_dir" -Art | tail -n 1)"
+  handle_file "$watch_dir/$latest_file"
+}
+
+if [ "$1" == "watch" ]; then
+  cmd_watch_directory
+else
+  cmd_upload_latest
+fi;

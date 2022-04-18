@@ -1,0 +1,6 @@
+watch_dir=/home/(yourname)/(somedir)/droplr # Directory to watch
+username="your-email"
+password="your-password"
+convert_video=1 # 1 = Convert videos to MP4, 0 = Leave them as-is
+notify=1 # 1 = Use notify-send to notify when available in the clipboard, 0 = Ignore clipboard action
+clip_cmd="wl-copy" # `xclip -selection clipboard` for Xorg, `wl-copy` is good for Wayland
