@@ -38,14 +38,31 @@ Next, create a file `$XDG_CONFIG_HOME/droplr-bash/config` (ex: `~/.config/droplr
 
 ### Watching
 
-Run `droplr watch`.
+Will watch continuously and upload on-demand of seeing a new file.
+
+#### Screenshots
+
+Run `droplr watch screenshots`.
+
+#### Screencasts
+
+Run `droplr watch screencasts`.
 
 ### Latest
 
-Run `droplr`.
+Will grab the latest file and upload it directly.
+
+#### Screenshots
+
+Run `droplr screenshots`.
+
+#### Screencasts
+
+Run `droplr screencasts`.
 
 ## Recommendations
 
-Use Droplr a lot? It would be worth setting up a SystemD script or similar start-up script to run the `droplr watch` in the background.
+Setup a keyboard shortcut for screenshots...
 
-If you rarely use it, it is best to invoke the script via a keyboard shortcut tied to `droplr` to upload the latest file.
+* `Super + Shift + S` for screenshots, mapped to `droplr screenshots`
+* `Super + Shift + V` for screencasts, mapped to `droplr screencasts`

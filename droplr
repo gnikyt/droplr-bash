@@ -106,20 +106,37 @@ handle_file() {
 
 # Watches the folder specified for writes or moves
 cmd_watch_directory() {
-  inotifywait --quiet --event close_write,moved_to -m "$watch_dir" |
+  inotifywait --quiet --event close_write,moved_to -m "$1" |
   while read -r directory events filename; do
-    handle_file "$watch_dir/$filename"
+    handle_file "$1/$filename"
   done
 }
 
 # Upload the latest file found
 cmd_upload_latest() {
-  latest_file="$(ls "$watch_dir" -Art | tail -n 1)"
-  handle_file "$watch_dir/$latest_file"
+  latest_file="$(ls "$1" -Art | tail -n 1)"
+  handle_file "$1/$latest_file"
 }
 
+# Work out the cmd to run
 if [ "$1" == "watch" ]; then
-  cmd_watch_directory
+  # Work out the path to use (second arg)
+  path=""
+  if [ "$2" == "screenshots" ]; then
+    path="$screenshots_dir"
+  else
+    path="$screencasts_dir"
+  fi;
+
+  cmd_watch_directory "$path"
 else
-  cmd_upload_latest
+  # Work out the path to use (first arg)
+  path=""
+  if [ "$1" == "screenshots" ]; then
+    path="$screenshots_dir"
+  else
+    path="$screencasts_dir"
+  fi;
+
+  cmd_upload_latest "$path"
 fi;

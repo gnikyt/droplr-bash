@@ -1,4 +1,5 @@
-watch_dir=/home/(yourname)/(somedir)/droplr # Directory to watch
+screenshots_dir=/home/(yourname)/Pictures/Screenshots # Directory where screenshots are held
+screencasts_dir=/home/(yourname)/Videos/Screencasts # Directory where screencasts are held
 username="your-email"
 password="your-password"
 convert_video=1 # 1 = Convert videos to MP4, 0 = Leave them as-is
