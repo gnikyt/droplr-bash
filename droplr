@@ -6,9 +6,17 @@ if [[ ! -f "$config_path" ]]; then
 fi;
 source "$config_path"
 
+# Support for Cinnamon's screenshot tool.
+# Good to set this to a directory of your choice, matching config:
+#   gsettings set org.gnome.gnome-screenshot auto-save-directory 'file:///home/user/Pictures/Screenshot'
+pre_hook_cinnamon() {
+  # Moves all "cinnamon*" videos to the proper directory.
+  find "$HOME" -name "cinnamon*.webm" -maxdepth 1 -exec mv {} "$HOME"/Videos/Screencasts \;
+}
+
 # Gets the extension of the file to upload.
 get_file_extension() {
-  # Get the file's details
+  # Get the file's details.
   local filename
   filename="$(basename -- "$1")"
 
@@ -28,7 +36,7 @@ move_to_tmp() {
   echo "$new_filepath"
 }
 
-# Attempts to do basic conversion of video file to mp4
+# Attempts to do basic conversion of video file to mp4.
 convert_video_file() {
   local new_filepath
   new_filepath="$1.mp4"
@@ -38,21 +46,21 @@ convert_video_file() {
   echo "$new_filepath"
 }
 
-# Uploads the file to S3
+# Uploads the file to S3.
 upload_file() {
-  # Get the base filename
+  # Get the base filename.
   local filename
   filename="$(basename -- "$1")"
 
-  # Get the mime for the file
+  # Get the mime for the file.
   local mime
   mime=$(file -b --mime-type "$1")
 
-  # Setup the auth
+  # Setup the auth.
   local auth
   auth=$(echo -n $username:$password | base64)
 
-  # Post the file
+  # Post the file.
   local post
   post=$(curl --silent \
     -X POST \
@@ -61,7 +69,7 @@ upload_file() {
     --data-binary "@$1" \
     https://api.droplr.com/files?filename="$filename")
 
-  # Get the location of the file upload\
+  # Get the location of the file upload.
   echo "$post" | jq '.shortlink' | tr -d '"'
 }
 
@@ -70,17 +78,17 @@ upload_file() {
 # It will perform checks on the filename and do different actions
 # depending upon settings and the file type.
 handle_file() {
-  # Get the extension
+  # Get the extension.
   local extension
   extension="$(get_file_extension "$1")"
 
-  # Move to tmp and rename
+  # Move to tmp and rename.
   local new_filepath
   new_filepath="$(move_to_tmp "${1}" "${extension}")"
 
-  # Check to convert video
+  # Check to convert video.
   if [ "$convert_video" == "1" ] ; then
-    # Check if this is a video
+    # Check if this is a video.
     local test_file
     test_file="$(file -i "$new_filepath" | grep video)"
 
@@ -91,20 +99,20 @@ handle_file() {
     fi
   fi
 
-  # Upload the file and get the file URL
+  # Upload the file and get the file URL.
   local location
   location="$(upload_file "$new_filepath")"
 
-  # Copy to clipboard for use
+  # Copy to clipboard for use.
   echo "$location" | "$clip_cmd"
   
-  # Check if we should notify
+  # Check if we should notify.
   if [ "$notify" == "1" ] ; then
     notify-send "Droplr Uploaded!" "Public link has been copied to your clipboard."
   fi;
 }
 
-# Watches the folder specified for writes or moves
+# Watches the folder specified for writes or moves.
 cmd_watch_directory() {
   inotifywait --quiet --event close_write,moved_to -m "$1" |
   while read -r directory events filename; do
@@ -112,15 +120,15 @@ cmd_watch_directory() {
   done
 }
 
-# Upload the latest file found
+# Upload the latest file found.
 cmd_upload_latest() {
   latest_file="$(ls "$1" -Art | tail -n 1)"
   handle_file "$1/$latest_file"
 }
 
-# Work out the cmd to run
+# Work out the cmd to run.
 if [ "$1" == "watch" ]; then
-  # Work out the path to use (second arg)
+  # Work out the path to use (second arg).
   path=""
   if [ "$2" == "screenshots" ]; then
     path="$screenshots_dir"
@@ -130,13 +138,17 @@ if [ "$1" == "watch" ]; then
 
   cmd_watch_directory "$path"
 else
-  # Work out the path to use (first arg)
+  # Work out the path to use (first arg).
   path=""
   if [ "$1" == "screenshots" ]; then
     path="$screenshots_dir"
   else
     path="$screencasts_dir"
   fi;
+
+  if [[ "$XDG_CURRENT_DESKTOP" == *"Cinnamon"* ]]; then
+    pre_hook_cinnamon
+  fi
 
   cmd_upload_latest "$path"
 fi;
